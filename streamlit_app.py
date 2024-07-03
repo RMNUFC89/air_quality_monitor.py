@@ -10,12 +10,10 @@ import streamlit as st
 
 # The API is called 'AQICN' #
 ## The API key is similar to a password. This will be used to access the Air Quality Data from the API. ##
-api_key = dd88e9b11b0d167c66e46b3338a4b4b0fd2127f9
+api_key = 'dd88e9b11b0d167c66e46b3338a4b4b0fd2127f9'
 
 # Main Cities in every UK Region #
 ## This section shows the biggest city for each UK region ##
-### This should be a dictionary that points each region to its biggest or main city ###
-#### In Python a dictionary is a collection of key-value pairs where each key is unique. A python dictionary is like a list. ####
 cities = {
     "Wales": "Cardiff",
     "Scotland": "Edinburgh",
@@ -36,10 +34,8 @@ cities = {
 ### A function is code that can be used multiple times to do a specific task/job. The below code is used for creating the web address that is needed to retrieve the Air Quality Data for each city ###
 
 def fetch_air_quality(city):
-
-def fetch_air_quality(city):
-# Constructing the API request URL #
-   ## The below URL is made by combining the URL with the city name and the API key. ##
+    # Constructing the API request URL #
+    ## The below URL is made by combining the URL with the city name and the API key. ##
     url = f"http://api.waqi.info/feed/{city}/?token={api_key}"
 
     # Request to the API
@@ -51,7 +47,7 @@ def fetch_air_quality(city):
     data = response.json()
     
     # Checking if the response status is 'ok' #
- ## The below should be able to check If the status is 'ok' and fine. If it is okay then it means the data was retrieved with no issues. But if is not okay then it should return as none per the last section of the code. ##
+    ## The below should be able to check If the status is 'ok' and fine. If it is okay then it means the data was retrieved with no issues. But if is not okay then it should return as none per the last section of the code. ##
     if data['status'] == 'ok':
         return data['data']
     else:
@@ -93,7 +89,7 @@ df = pd.DataFrame(air_quality_data)
 
 ### Set Up Our Streamlit App ###
 # Use Streamlit to create a web app to display the data.
-st.title("Air Quality Data for UK Regions")  # Title of our app.
+st.title("Air Quality Data for UK Regions")  # Title of the app.
 st.write("## Main Cities and Their Air Quality Data")
 st.write("""
 This application displays the air quality data for the main cities in each of the 12 regions of the UK. 
