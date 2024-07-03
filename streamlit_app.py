@@ -1,10 +1,10 @@
-"""
-Air Quality Data Exploration 
+***
+Air Quality Data - Digital Futures Capstone
 
 Skills used: API Requests, Data Handling with Pandas, Data Visualization with Streamlit
-"""
+***
 
-# Importing the libraries #
+## Importing the libraries ##
 import requests  # to make HTTP requests to get data from the internet
 import pandas as pd  # for data manipulation
 import streamlit as st  # for creating a web app
