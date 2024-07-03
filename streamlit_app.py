@@ -4,7 +4,7 @@ Air Quality Data Exploration
 Skills used: API Requests, Data Handling with Pandas, Data Visualization with Streamlit
 """
 
-# Importing the libraries we need
+# Importing the libraries #
 import requests  # to make HTTP requests to get data from the internet
 import pandas as pd  # for data manipulation
 import streamlit as st  # for creating a web app
@@ -42,7 +42,7 @@ def fetch_air_quality(city):
     else:
         return None  # Return None if there is an error
 
-# Create an empty list to store the air quality data
+## This is an empty list to store the air quality data in ##
 air_quality_data = []
 
 # Loop through each city to get the air quality data
@@ -98,10 +98,3 @@ st.write("Data saved to CSV:", csv_file)
 # Visualization: Show AQI for each city in a bar chart
 st.write("## Air Quality Index (AQI) for Each City")
 st.bar_chart(df.set_index('city')['aqi'])
-
-# Additional analysis can be performed similarly
-st.write("## Analysis")
-st.write("""
-Further analysis can include comparisons of pollutant levels across regions, trends over time, 
-and correlation with population density and other factors.
-""")
