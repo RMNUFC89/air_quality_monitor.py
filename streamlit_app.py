@@ -4,11 +4,11 @@ Air Quality Data Exploration
 Skills used: API Requests, Data Handling with Pandas, Data Visualization with Streamlit and Folium
 """
 
-# Importing the libraries we need
 import requests  # to make HTTP requests to get data from the internet
 import pandas as pd  # for data manipulation
 import streamlit as st  # for creating a web app
 import folium  # for creating interactive maps
+import geopandas as gpd  # for handling geographical data
 from streamlit_folium import folium_static  # to display folium maps in Streamlit
 
 # Your AQICN API key
@@ -82,17 +82,36 @@ csv_file = 'uk_air_quality_data.csv'
 df.to_csv(csv_file, index=False)
 st.write("Data saved to CSV:", csv_file)
 
-# Function to determine the color of the marker based on AQI
+# Function to determine the color of the region based on AQI
 def get_color(aqi):
     if aqi <= 50:
         return 'green'  # Good
-    elif 51 <= aqi <= 100:
+    elif 51 <= 100:
         return 'yellow'  # Moderate
     else:
         return 'red'  # Bad
 
+# Load the geographical data for UK regions
+gdf = gpd.read_file(gpd.datasets.get_path('naturalearth_lowres'))
+uk_gdf = gdf[gdf['name'] == 'United Kingdom']
+
+# Merge air quality data with geographical data
+uk_gdf = uk_gdf.assign(aqi=df.set_index('region')['aqi'])
+
 # Create a folium map centered around the UK
 map = folium.Map(location=[54.0, -2.0], zoom_start=6)
+
+# Add a choropleth layer to the map
+folium.Choropleth(
+    geo_data=uk_gdf.__geo_interface__,
+    data=df,
+    columns=['region', 'aqi'],
+    key_on='feature.properties.name',
+    fill_color='YlGn',
+    fill_opacity=0.7,
+    line_opacity=0.2,
+    legend_name='Air Quality Index (AQI)'
+).add_to(map)
 
 # Add a marker for each city
 for index, row in df.iterrows():
