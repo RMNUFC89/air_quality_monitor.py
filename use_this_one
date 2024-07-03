@@ -8,9 +8,11 @@ import requests
 import pandas as pd
 import streamlit as st
 
-# The API is called 'AQICN' #
-## The API key is similar to a password. This will be used to access the Air Quality Data from the API. ##
-api_key = 'dd88e9b11b0d167c66e46b3338a4b4b0fd2127f9'
+# Load environment variables from the .env file
+load_dotenv()
+
+# Access the API key from environment variables
+api_key = os.getenv('API_KEY')
 
 # Main Cities in every UK Region #
 ## This section shows the biggest city for each UK region ##
