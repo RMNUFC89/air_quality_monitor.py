@@ -1,12 +1,18 @@
-import requests
-import pandas as pd
-import matplotlib.pyplot as plt
-import streamlit as st
+"""
+Air Quality Data Exploration 
+
+Skills used: API Requests, Data Handling with Pandas, Data Visualization with Streamlit
+"""
+
+# Importing the libraries we need
+import requests  # to make HTTP requests to get data from the internet
+import pandas as pd  # for data manipulation
+import streamlit as st  # for creating a web app
 
 # Your AQICN API key
 api_key = 'dd88e9b11b0d167c66e46b3338a4b4b0fd2127f9'
 
-# Main cities for each region in the UK
+# These are the main cities in each UK region
 cities = {
     "Wales": "Cardiff",
     "Scotland": "Edinburgh",
@@ -17,49 +23,91 @@ cities = {
     "Yorkshire and the Humber": "Leeds",
     "East Midlands": "Nottingham",
     "West Midlands": "Birmingham",
-    "South East England": "Brighton and Hove",
+    "South East England": "Brighton",
     "East of England": "Norwich",
     "South West England": "Bristol"
 }
 
 # Function to fetch air quality data for a specific city
 def fetch_air_quality(city):
+    # Construct the API request URL
     url = f"http://api.waqi.info/feed/{city}/?token={api_key}"
+    # Make the request to the API
     response = requests.get(url)
-    response.raise_for_status()  # Raises an HTTPError for bad responses
+    # Convert the response to JSON format
     data = response.json()
+    # Check if the response status is 'ok'
     if data['status'] == 'ok':
         return data['data']
     else:
-        raise Exception(f"Error fetching data for {city}: {data['data']}")
+        return None  # Return None if there is an error
 
-# Fetch air quality data for each city and region
+# Create an empty list to store the air quality data
 air_quality_data = []
 
+# Loop through each city to get the air quality data
 for region, city in cities.items():
     try:
+        # Fetch the air quality data for the city
         city_data = fetch_air_quality(city)
-        air_quality_data.append({
-            'region': region,
-            'city': city,
-            'aqi': city_data['aqi'],
-            'pm25': city_data['iaqi']['pm25']['v'] if 'pm25' in city_data['iaqi'] else None,
-            'pm10': city_data['iaqi']['pm10']['v'] if 'pm10' in city_data['iaqi'] else None,
-            'no2': city_data['iaqi']['no2']['v'] if 'no2' in city_data['iaqi'] else None,
-            'so2': city_data['iaqi']['so2']['v'] if 'so2' in city_data['iaqi'] else None,
-            'co': city_data['iaqi']['co']['v'] if 'co' in city_data['iaqi'] else None,
-            'o3': city_data['iaqi']['o3']['v'] if 'o3' in city_data['iaqi'] else None
-        })
+        # Check if data is returned
+        if city_data:
+            # Create a dictionary to store the data for each city
+            city_info = {
+                'region': region,
+                'city': city,
+                'aqi': city_data['aqi'],  # Air Quality Index: A measure of how polluted the air is
+                'pm25': city_data['iaqi'].get('pm25', {}).get('v', None),  # Particulate Matter < 2.5 microns
+                'pm10': city_data['iaqi'].get('pm10', {}).get('v', None),  # Particulate Matter < 10 microns
+                'no2': city_data['iaqi'].get('no2', {}).get('v', None),  # Nitrogen Dioxide
+                'so2': city_data['iaqi'].get('so2', {}).get('v', None),  # Sulfur Dioxide
+                'co': city_data['iaqi'].get('co', {}).get('v', None),  # Carbon Monoxide
+                'o3': city_data['iaqi'].get('o3', {}).get('v', None)  # Ozone
+            }
+            # Add the city's data to our list
+            air_quality_data.append(city_info)
     except Exception as e:
-        print(f"Error fetching data for {city}: {e}")
+        # Print an error message if there's a problem
+        print("Error fetching data for", city, ":", e)
 
-# Convert the data into a pandas DataFrame
+# Convert the list of data into a pandas DataFrame (like a table)
 df = pd.DataFrame(air_quality_data)
 
-# Display the DataFrame using Streamlit
-st.title("Air Quality Data for UK Regions")
+# Set up our Streamlit app
+st.title("Air Quality Data for UK Regions")  # Title of our app
+st.write("## Main Cities and Their Air Quality Data")
+st.write("""
+This application fetches and displays the air quality data for the main cities in each of the 12 regions of the UK. 
+The data includes the AQI (Air Quality Index) and concentrations of various pollutants:
+- **PM2.5**: Particulate Matter < 2.5 microns. Tiny particles that reduce visibility and cause the air to appear hazy when levels are elevated.
+- **PM10**: Particulate Matter < 10 microns. Particles that can be inhaled and cause health problems.
+- **NO2**: Nitrogen Dioxide. A pollutant that can irritate the lungs and lower resistance to respiratory infections.
+- **SO2**: Sulfur Dioxide. A gas that can cause respiratory problems and aggravate existing heart disease.
+- **CO**: Carbon Monoxide. A colorless, odorless gas that can cause harmful health effects by reducing oxygen delivery to the body's organs and tissues.
+- **O3**: Ozone. A gas that can cause respiratory problems and other health issues.
+""")
+
+# Display the DataFrame in our app
 st.dataframe(df)
 
 # Save the DataFrame to a CSV file
-df.to_csv('uk_air_quality_data.csv', index=False)
-st.write("Data saved to CSV: uk_air_quality_data.csv")
+csv_file = 'uk_air_quality_data.csv'
+df.to_csv(csv_file, index=False)
+st.write("Data saved to CSV:", csv_file)
+
+# Visualization: Show AQI for each city in a bar chart
+st.write("## Air Quality Index (AQI) for Each City")
+st.bar_chart(df.set_index('city')['aqi'])
+
+# Visualization: Show levels of each pollutant for each city
+st.write("## Pollutant Levels by City")
+for pollutant in ['pm25', 'pm10', 'no2', 'so2', 'co', 'o3']:
+    st.write(f"### {pollutant.upper()} Levels")
+    st.bar_chart(df.set_index('city')[pollutant])
+
+# Additional analysis can be performed similarly
+st.write("## Analysis")
+st.write("""
+Further analysis can include comparisons of pollutant levels across regions, trends over time, 
+and correlation with population density and other factors.
+""")
