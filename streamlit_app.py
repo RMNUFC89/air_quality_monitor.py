@@ -1,119 +1,65 @@
-import streamlit as st
+import requests
 import pandas as pd
+import matplotlib.pyplot as plt
+import streamlit as st
 
+# Your AQICN API key
+api_key = 'dd88e9b11b0d167c66e46b3338a4b4b0fd2127f9'
 
-st.title("📊 Data evaluation app")
-
-st.write(
-    "We are so glad to see you here. ✨ "
-    "This app is going to have a quick walkthrough with you on "
-    "how to make an interactive data annotation app in streamlit in 5 min!"
-)
-
-st.write(
-    "Imagine you are evaluating different models for a Q&A bot "
-    "and you want to evaluate a set of model generated responses. "
-    "You have collected some user data. "
-    "Here is a sample question and response set."
-)
-
-data = {
-    "Questions": [
-        "Who invented the internet?",
-        "What causes the Northern Lights?",
-        "Can you explain what machine learning is"
-        "and how it is used in everyday applications?",
-        "How do penguins fly?",
-    ],
-    "Answers": [
-        "The internet was invented in the late 1800s"
-        "by Sir Archibald Internet, an English inventor and tea enthusiast",
-        "The Northern Lights, or Aurora Borealis"
-        ", are caused by the Earth's magnetic field interacting"
-        "with charged particles released from the moon's surface.",
-        "Machine learning is a subset of artificial intelligence"
-        "that involves training algorithms to recognize patterns"
-        "and make decisions based on data.",
-        " Penguins are unique among birds because they can fly underwater. "
-        "Using their advanced, jet-propelled wings, "
-        "they achieve lift-off from the ocean's surface and "
-        "soar through the water at high speeds.",
-    ],
+# Main cities for each region in the UK
+cities = {
+    "Wales": "Cardiff",
+    "Scotland": "Edinburgh",
+    "Northern Ireland": "Belfast",
+    "London": "London",
+    "North East England": "Newcastle upon Tyne",
+    "North West England": "Manchester",
+    "Yorkshire and the Humber": "Leeds",
+    "East Midlands": "Nottingham",
+    "West Midlands": "Birmingham",
+    "South East England": "Brighton and Hove",
+    "East of England": "Norwich",
+    "South West England": "Bristol"
 }
 
-df = pd.DataFrame(data)
+# Function to fetch air quality data for a specific city
+def fetch_air_quality(city):
+    url = f"http://api.waqi.info/feed/{city}/?token={api_key}"
+    response = requests.get(url)
+    response.raise_for_status()  # Raises an HTTPError for bad responses
+    data = response.json()
+    if data['status'] == 'ok':
+        return data['data']
+    else:
+        raise Exception(f"Error fetching data for {city}: {data['data']}")
 
-st.write(df)
+# Fetch air quality data for each city and region
+air_quality_data = []
 
-st.write(
-    "Now I want to evaluate the responses from my model. "
-    "One way to achieve this is to use the very powerful `st.data_editor` feature. "
-    "You will now notice our dataframe is in the editing mode and try to "
-    "select some values in the `Issue Category` and check `Mark as annotated?` once finished 👇"
-)
+for region, city in cities.items():
+    try:
+        city_data = fetch_air_quality(city)
+        air_quality_data.append({
+            'region': region,
+            'city': city,
+            'aqi': city_data['aqi'],
+            'pm25': city_data['iaqi']['pm25']['v'] if 'pm25' in city_data['iaqi'] else None,
+            'pm10': city_data['iaqi']['pm10']['v'] if 'pm10' in city_data['iaqi'] else None,
+            'no2': city_data['iaqi']['no2']['v'] if 'no2' in city_data['iaqi'] else None,
+            'so2': city_data['iaqi']['so2']['v'] if 'so2' in city_data['iaqi'] else None,
+            'co': city_data['iaqi']['co']['v'] if 'co' in city_data['iaqi'] else None,
+            'o3': city_data['iaqi']['o3']['v'] if 'o3' in city_data['iaqi'] else None
+        })
+    except Exception as e:
+        print(f"Error fetching data for {city}: {e}")
 
-df["Issue"] = [True, True, True, False]
-df["Category"] = ["Accuracy", "Accuracy", "Completeness", ""]
+# Convert the data into a pandas DataFrame
+df = pd.DataFrame(air_quality_data)
 
-new_df = st.data_editor(
-    df,
-    column_config={
-        "Questions": st.column_config.TextColumn(width="medium", disabled=True),
-        "Answers": st.column_config.TextColumn(width="medium", disabled=True),
-        "Issue": st.column_config.CheckboxColumn("Mark as annotated?", default=False),
-        "Category": st.column_config.SelectboxColumn(
-            "Issue Category",
-            help="select the category",
-            options=["Accuracy", "Relevance", "Coherence", "Bias", "Completeness"],
-            required=False,
-        ),
-    },
-)
+# Display the DataFrame using Streamlit
+st.title("Air Quality Data for UK Regions")
+st.dataframe(df)
 
-st.write(
-    "You will notice that we changed our dataframe and added new data. "
-    "Now it is time to visualize what we have annotated!"
-)
-
-st.divider()
-
-st.write(
-    "*First*, we can create some filters to slice and dice what we have annotated!"
-)
-
-col1, col2 = st.columns([1, 1])
-with col1:
-    issue_filter = st.selectbox("Issues or Non-issues", options=new_df.Issue.unique())
-with col2:
-    category_filter = st.selectbox(
-        "Choose a category",
-        options=new_df[new_df["Issue"] == issue_filter].Category.unique(),
-    )
-
-st.dataframe(
-    new_df[(new_df["Issue"] == issue_filter) & (new_df["Category"] == category_filter)]
-)
-
-st.markdown("")
-st.write(
-    "*Next*, we can visualize our data quickly using `st.metrics` and `st.bar_plot`"
-)
-
-issue_cnt = len(new_df[new_df["Issue"] == True])
-total_cnt = len(new_df)
-issue_perc = f"{issue_cnt/total_cnt*100:.0f}%"
-
-col1, col2 = st.columns([1, 1])
-with col1:
-    st.metric("Number of responses", issue_cnt)
-with col2:
-    st.metric("Annotation Progress", issue_perc)
-
-df_plot = new_df[new_df["Category"] != ""].Category.value_counts().reset_index()
-
-st.bar_chart(df_plot, x="Category", y="count")
-
-st.write(
-    "Here we are at the end of getting started with streamlit! Happy Streamlit-ing! :balloon:"
-)
-
+# Save the DataFrame to a CSV file
+df.to_csv('uk_air_quality_data.csv', index=False)
+st.write("Data saved to CSV: uk_air_quality_data.csv")
