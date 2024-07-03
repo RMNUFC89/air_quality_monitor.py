@@ -53,14 +53,7 @@ for region, city in cities.items():
             city_info = {
                 'region': region,
                 'city': city['name'],
-                'coords': city['coords'],
-                'aqi': city_data['aqi'],  # Air Quality Index: A measure of how polluted the air is
-                'pm25': city_data['iaqi'].get('pm25', {}).get('v', None),  # Particulate Matter < 2.5 microns
-                'pm10': city_data['iaqi'].get('pm10', {}).get('v', None),  # Particulate Matter < 10 microns
-                'no2': city_data['iaqi'].get('no2', {}).get('v', None),  # Nitrogen Dioxide
-                'so2': city_data['iaqi'].get('so2', {}).get('v', None),  # Sulfur Dioxide
-                'co': city_data['iaqi'].get('co', {}).get('v', None),  # Carbon Monoxide
-                'o3': city_data['iaqi'].get('o3', {}).get('v', None)  # Ozone
+                'aqi': city_data['aqi']  # Air Quality Index: A measure of how polluted the air is
             }
             # Add the city's data to our list
             air_quality_data.append(city_info)
@@ -70,12 +63,24 @@ for region, city in cities.items():
 # Convert the list of data into a pandas DataFrame (like a table)
 df = pd.DataFrame(air_quality_data)
 
+# Function to determine the color of the row based on AQI
+def get_row_color(aqi):
+    if aqi <= 50:
+        return 'background-color: green'
+    elif 51 <= aqi <= 100:
+        return 'background-color: yellow'
+    else:
+        return 'background-color: red'
+
+# Apply the row color function to the DataFrame
+styled_df = df.style.applymap(lambda x: get_row_color(x) if isinstance(x, int) else '')
+
 # Set up our Streamlit app
 st.title("Air Quality Data for UK Regions")  # Title of our app
 st.write("## Main Cities and Their Air Quality Data")
 
-# Display the DataFrame in our app
-st.dataframe(df)
+# Display the styled DataFrame in our app
+st.dataframe(styled_df)
 
 # Save the DataFrame to a CSV file
 csv_file = 'uk_air_quality_data.csv'
@@ -83,7 +88,7 @@ df.to_csv(csv_file, index=False)
 st.write("Data saved to CSV:", csv_file)
 
 # Function to determine the color of the marker based on AQI
-def get_color(aqi):
+def get_marker_color(aqi):
     if aqi <= 50:
         return 'green'  # Good
     elif 51 <= 100:
@@ -97,9 +102,9 @@ map = folium.Map(location=[54.0, -2.0], zoom_start=6)
 # Add a marker for each city
 for index, row in df.iterrows():
     folium.Marker(
-        location=row['coords'],
+        location=cities[row['region']]['coords'],
         popup=f"{row['city']} (AQI: {row['aqi']})",
-        icon=folium.Icon(color=get_color(row['aqi']))
+        icon=folium.Icon(color=get_marker_color(row['aqi']))
     ).add_to(map)
 
 # Display the map in the Streamlit app
