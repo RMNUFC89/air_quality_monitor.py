@@ -1,46 +1,44 @@
 """
 Air Quality Data Exploration 
 
-Skills used: API Requests, Data Handling with Pandas, Data Visualization with Streamlit
+Skills used: API Requests, Data Handling with Pandas, Data Visualization with Streamlit and Folium
 """
 
 # Importing the libraries we need
 import requests  # to make HTTP requests to get data from the internet
 import pandas as pd  # for data manipulation
 import streamlit as st  # for creating a web app
+import folium  # for creating interactive maps
+from streamlit_folium import folium_static  # to display folium maps in Streamlit
 
 # Your AQICN API key
 api_key = 'dd88e9b11b0d167c66e46b3338a4b4b0fd2127f9'
 
-# These are the main cities in each UK region
+# These are the main cities in each UK region along with their coordinates
 cities = {
-    "Wales": "Cardiff",
-    "Scotland": "Edinburgh",
-    "Northern Ireland": "Belfast",
-    "London": "London",
-    "North East England": "Newcastle upon Tyne",
-    "North West England": "Manchester",
-    "Yorkshire and the Humber": "Leeds",
-    "East Midlands": "Nottingham",
-    "West Midlands": "Birmingham",
-    "South East England": "Brighton",
-    "East of England": "Norwich",
-    "South West England": "Bristol"
+    "Wales": {"name": "Cardiff", "coords": [51.4816, -3.1791]},
+    "Scotland": {"name": "Edinburgh", "coords": [55.9533, -3.1883]},
+    "Northern Ireland": {"name": "Belfast", "coords": [54.5973, -5.9301]},
+    "London": {"name": "London", "coords": [51.5074, -0.1278]},
+    "North East England": {"name": "Newcastle upon Tyne", "coords": [54.9783, -1.6174]},
+    "North West England": {"name": "Manchester", "coords": [53.4808, -2.2426]},
+    "Yorkshire and the Humber": {"name": "Leeds", "coords": [53.8008, -1.5491]},
+    "East Midlands": {"name": "Nottingham", "coords": [52.9548, -1.1581]},
+    "West Midlands": {"name": "Birmingham", "coords": [52.4862, -1.8904]},
+    "South East England": {"name": "Brighton", "coords": [50.8225, -0.1372]},
+    "East of England": {"name": "Norwich", "coords": [52.6309, 1.2974]},
+    "South West England": {"name": "Bristol", "coords": [51.4545, -2.5879]}
 }
 
 # Function to fetch air quality data for a specific city
 def fetch_air_quality(city):
-    # Construct the API request URL
-    url = f"http://api.waqi.info/feed/{city}/?token={api_key}"
-    # Make the request to the API
+    url = f"http://api.waqi.info/feed/{city['name']}/?token={api_key}"
     response = requests.get(url)
-    # Convert the response to JSON format
     data = response.json()
-    # Check if the response status is 'ok'
     if data['status'] == 'ok':
         return data['data']
     else:
-        return None  # Return None if there is an error
+        return None
 
 # Create an empty list to store the air quality data
 air_quality_data = []
@@ -50,12 +48,12 @@ for region, city in cities.items():
     try:
         # Fetch the air quality data for the city
         city_data = fetch_air_quality(city)
-        # Check if data is returned
         if city_data:
             # Create a dictionary to store the data for each city
             city_info = {
                 'region': region,
-                'city': city,
+                'city': city['name'],
+                'coords': city['coords'],
                 'aqi': city_data['aqi'],  # Air Quality Index: A measure of how polluted the air is
                 'pm25': city_data['iaqi'].get('pm25', {}).get('v', None),  # Particulate Matter < 2.5 microns
                 'pm10': city_data['iaqi'].get('pm10', {}).get('v', None),  # Particulate Matter < 10 microns
@@ -67,8 +65,7 @@ for region, city in cities.items():
             # Add the city's data to our list
             air_quality_data.append(city_info)
     except Exception as e:
-        # Print an error message if there's a problem
-        print("Error fetching data for", city, ":", e)
+        print("Error fetching data for", city['name'], ":", e)
 
 # Convert the list of data into a pandas DataFrame (like a table)
 df = pd.DataFrame(air_quality_data)
@@ -76,16 +73,6 @@ df = pd.DataFrame(air_quality_data)
 # Set up our Streamlit app
 st.title("Air Quality Data for UK Regions")  # Title of our app
 st.write("## Main Cities and Their Air Quality Data")
-st.write("""
-This application fetches and displays the air quality data for the main cities in each of the 12 regions of the UK. 
-The data includes the AQI (Air Quality Index) and concentrations of various pollutants:
-- **PM2.5**: Particulate Matter < 2.5 microns. Tiny particles that reduce visibility and cause the air to appear hazy when levels are elevated.
-- **PM10**: Particulate Matter < 10 microns. Particles that can be inhaled and cause health problems.
-- **NO2**: Nitrogen Dioxide. A pollutant that can irritate the lungs and lower resistance to respiratory infections.
-- **SO2**: Sulfur Dioxide. A gas that can cause respiratory problems and aggravate existing heart disease.
-- **CO**: Carbon Monoxide. A colorless, odorless gas that can cause harmful health effects by reducing oxygen delivery to the body's organs and tissues.
-- **O3**: Ozone. A gas that can cause respiratory problems and other health issues.
-""")
 
 # Display the DataFrame in our app
 st.dataframe(df)
@@ -95,19 +82,26 @@ csv_file = 'uk_air_quality_data.csv'
 df.to_csv(csv_file, index=False)
 st.write("Data saved to CSV:", csv_file)
 
-# Visualization: Show AQI for each city in a bar chart
-st.write("## Air Quality Index (AQI) for Each City")
-st.bar_chart(df.set_index('city')['aqi'])
+# Function to determine the color of the marker based on AQI
+def get_color(aqi):
+    if aqi <= 50:
+        return 'green'  # Good
+    elif 51 <= aqi <= 100:
+        return 'yellow'  # Moderate
+    else:
+        return 'red'  # Bad
 
-# Visualization: Show levels of each pollutant for each city
-st.write("## Pollutant Levels by City")
-for pollutant in ['pm25', 'pm10', 'no2', 'so2', 'co', 'o3']:
-    st.write(f"### {pollutant.upper()} Levels")
-    st.bar_chart(df.set_index('city')[pollutant])
+# Create a folium map centered around the UK
+map = folium.Map(location=[54.0, -2.0], zoom_start=6)
 
-# Additional analysis can be performed similarly
-st.write("## Analysis")
-st.write("""
-Further analysis can include comparisons of pollutant levels across regions, trends over time, 
-and correlation with population density and other factors.
-""")
+# Add a marker for each city
+for index, row in df.iterrows():
+    folium.Marker(
+        location=row['coords'],
+        popup=f"{row['city']} (AQI: {row['aqi']})",
+        icon=folium.Icon(color=get_color(row['aqi']))
+    ).add_to(map)
+
+# Display the map in the Streamlit app
+st.write("## Air Quality Map")
+folium_static(map)
