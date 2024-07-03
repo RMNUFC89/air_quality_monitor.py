@@ -82,7 +82,7 @@ def get_row_color(aqi):
     if aqi <= 50:
         return 'background-color: green'
     elif 51 <= aqi <= 100:
-        return 'background-color: yellow'
+        return 'background-color: orange'
     else:
         return 'background-color: red'
 
