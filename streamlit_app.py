@@ -102,7 +102,7 @@ def get_marker_color(aqi):
     if aqi <= 50:
         return 'green'  # Good
     elif 51 <= 100:
-        return 'yellow'  # Moderate
+        return 'orange'  # Moderate
     else:
         return 'red'  # Bad
 
