@@ -99,12 +99,6 @@ st.write("Data saved to CSV:", csv_file)
 st.write("## Air Quality Index (AQI) for Each City")
 st.bar_chart(df.set_index('city')['aqi'])
 
-# Visualization: Show levels of each pollutant for each city
-st.write("## Pollutant Levels by City")
-for pollutant in ['pm25', 'pm10', 'no2', 'so2', 'co', 'o3']:
-    st.write(f"### {pollutant.upper()} Levels")
-    st.bar_chart(df.set_index('city')[pollutant])
-
 # Additional analysis can be performed similarly
 st.write("## Analysis")
 st.write("""
