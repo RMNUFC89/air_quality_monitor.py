@@ -4,18 +4,8 @@
 ### Importing the Libraries ###
 #### This section is used to import some of the data libraries from the API to help retrieve the data. ####
 
-- Importing the request library -
--- This library makes HTTP requests to get data from the API. Hypertext Transfer Protocol (HTTP) this is used to get the data from the internet --
 import requests
-
-- Importing the panda library -
--- Pandas are a library in Python mainly used for analysis --
---- pd below is an abreviation for Panda, I've made an abbreviation to save time when writing the code ---
 import pandas as pd
-
-- Importing the Streamlit Library -
--- Streamlit is used to help create a website --
---- st is an abbreviation for streamlit, I've made this abbreviation to save time when writing the code ---
 import streamlit as st
 
 # The API is called 'AQICN' #
